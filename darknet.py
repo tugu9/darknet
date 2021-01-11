@@ -130,12 +130,37 @@ def print_detections(detections, coordinates=False):
 
 def draw_boxes(detections, image, colors):
     import cv2
+    import easyocr
+    from PIL import ImageFont, ImageDraw, Image
+    reader = easyocr.Reader(['mn'])
+    fontPath = "/arial-unicode-ms/ARIALUNI.TTF"
+    font=ImageFont.truetype(fontPath,14)
     for label, confidence, bbox in detections:
         left, top, right, bottom = bbox2points(bbox)
         cv2.rectangle(image, (left, top), (right, bottom), colors[label], 1)
-        cv2.putText(image, "{} [{:.2f}]".format(label, float(confidence)),
-                    (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    colors[label], 2)
+        # additions starting here
+        cropImg = image[bottom:top, left:right].copy()
+        text = reader.readtext(cropImg, detail=0)
+        # cleaning up the text into one string
+        unifText = ''
+        try:
+          for el in bounds:
+            for char in el:
+              if not char.isspace():
+                unifText+=char
+        except:
+          pass
+        
+        color = (0,255,0,0)
+        image = Image.fromarray(image)
+        draw = ImageDraw.Draw(image)
+        draw.text((left, top - 5), unifText, font=font, fill = colors[label])
+        image = np.array(image)
+
+        # till here
+        # cv2.putText(image, "{} [{:.2f}]".format(label, float(confidence)),
+        #             (left, top - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+        #             colors[label], 2)
     return image
 
 
